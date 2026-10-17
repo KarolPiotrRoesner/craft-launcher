@@ -149,6 +149,10 @@ pub struct LauncherUi {
     /// Versions of apps or the launcher already queued for auto-update during this session,
     /// preventing repeated install loops if an update fails or is in progress.
     pub(crate) auto_update_attempted: std::collections::BTreeSet<(String, String)>,
+    /// The folder the backend clones the repos into.
+    pub(crate) repos_folder: Option<String>,
+    /// "Check repos" is fetching.
+    pub(crate) checking_repos: bool,
 }
 
 /// The language to draw in: the preference, or English where it needs a CJK font the system
@@ -206,6 +210,8 @@ impl LauncherUi {
             last_detect: 0,
             was_focused: true,
             auto_update_attempted: std::collections::BTreeSet::new(),
+            repos_folder: None,
+            checking_repos: false,
         }
     }
 
@@ -239,7 +245,23 @@ impl LauncherUi {
     /// Something is downloading or installing, the launcher's own update included: quitting now
     /// would cut it short.
     pub fn busy(&self) -> bool {
-        self.launcher_job.is_some() || self.entries.iter().any(|e| e.job.is_some())
+        self.launcher_job.is_some() || self.entries.iter().any(|e| e.job.is_some() || e.repo_busy())
+    }
+
+    /// Clones every app's repo that's missing and updates the others (the toolbar's button).
+    pub(crate) fn sync_all_repos(&mut self) {
+        let ids: Vec<&str> = self.entries.iter().filter(|e| !e.repo_busy()).map(|e| e.app.id).collect();
+        for id in ids {
+            self.send(Command::SyncRepo { app: id.to_string() });
+        }
+    }
+
+    /// Fetches every clone to see what's new, changing no files.
+    pub(crate) fn check_repos(&mut self) {
+        if !self.checking_repos {
+            self.checking_repos = true;
+            self.send(Command::CheckRepos);
+        }
     }
 
     /// Looks for updates now (the tray's "Check for Updates").
@@ -275,6 +297,7 @@ impl LauncherUi {
             kinds: self.settings.preferred_kinds.clone(),
             prereleases: self.settings.prereleases,
             install_locations: self.settings.install_locations.clone(),
+            repos_root: self.settings.repos_folder.clone(),
         };
         if self.sent_options.as_ref() != Some(&options) {
             self.backend.send(Command::Configure(options.clone()));
@@ -442,6 +465,36 @@ impl LauncherUi {
                     self.dialog = Some(Dialog::LauncherUpdate(r));
                 }
                 fresh
+            }
+            Event::Repo { app, state } => {
+                if let Some(e) = self.entry_mut(&app) {
+                    // A new job starts with a clean slate.
+                    if state.busy() {
+                        e.repo_note = None;
+                    }
+                    e.repo = Some(state);
+                }
+                false
+            }
+            // Each app's repo line shows how a job ended, rather than a toast per app.
+            Event::RepoFinished { app, result } => {
+                match self.entry_mut(&app) {
+                    Some(e) => e.repo_note = result.err(),
+                    None => {
+                        if let Err(e) = result {
+                            self.toast(ctx, e, true);
+                        }
+                    }
+                }
+                false
+            }
+            Event::ReposChecked => {
+                self.checking_repos = false;
+                false
+            }
+            Event::ReposFolder(folder) => {
+                self.repos_folder = Some(folder);
+                false
             }
             Event::CheckStarted => {
                 self.checking = true;

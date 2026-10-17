@@ -360,3 +360,53 @@ filter	Installed	Installées
 	Replace what's there?	Remplacer l’existant ?
 	{path} already exists. Installing {name} will overwrite it.	{path} existe déjà. L’installation de {name} l’écrasera.
 	Replace	Remplacer
+# Source code repos (clone, check and update with git).
+	Repos	Dépôts
+	Not cloned	Non cloné
+	Waiting…	En attente…
+	Cloning…	Clonage…
+	Fetching…	Récupération…
+	The folder isn't a git repository	Le dossier n'est pas un dépôt Git
+	A clone of another repository	Un clone d'un autre dépôt
+	Git isn't installed	Git n'est pas installé
+	detached	détaché
+	diverged	divergent
+	up to date	à jour
+	modified	modifié
+	Checking repos…	Vérification des dépôts…
+	Check repos	Vérifier les dépôts
+	Fetch every cloned repo to see what's new, without changing any files	Récupère chaque dépôt cloné pour voir les nouveautés, sans modifier aucun fichier
+	Repos: {count} to go	Dépôts : encore {count}
+	Update repos ({count})	Mettre à jour les dépôts ({count})
+	Update repos	Mettre à jour les dépôts
+	Download all repos	Télécharger tous les dépôts
+	Git isn't installed. Install it from git-scm.com, then try again.	Git n'est pas installé. Installez-le depuis git-scm.com, puis réessayez.
+	Update repository	Mettre à jour le dépôt
+	Clone repository	Cloner le dépôt
+	Open repository folder	Ouvrir le dossier du dépôt
+	Open folder	Ouvrir le dossier
+	Source code	Code source
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	« Télécharger tous les dépôts » clone le dépôt GitHub de chaque application avec tout son historique ; les clones avec des modifications locales sont seulement récupérés, jamais écrasés. Nécessite Git.
+	Get Git	Obtenir Git
+	Repos folder	Dossier des dépôts
+	Each app's repo is cloned into its own folder in here.	Le dépôt de chaque application est cloné ici, dans son propre dossier.
+@plural	{n} update|{n} updates	{n} mise à jour|{n} mises à jour
+@plural	{n} local commit|{n} local commits	{n} commit local|{n} commits locaux
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} existe déjà et n'est pas un dépôt Git ; il n'a donc pas été touché
+@msg	{path} is a clone of another repository, so it was left alone	{path} est un clone d'un autre dépôt ; il n'a donc pas été touché
+@msg	Couldn't fetch {name}'s source code: {e}	Impossible de récupérer le code source de {name} : {e}
+@msg	Couldn't create {path}: {e}	Impossible de créer {path} : {e}
+@msg	{name}'s source code was cloned	Le code source de {name} a été cloné
+@msg	Couldn't clone {name}'s source code: {e}	Impossible de cloner le code source de {name} : {e}
+@msg	{name}'s source code is up to date	Le code source de {name} est à jour
+@msg	{name}'s clone isn't on a branch, so it was only fetched	Le clone de {name} n'est sur aucune branche ; il a seulement été récupéré
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	Le clone de {name} contient des commits locaux absents de GitHub ; il a seulement été récupéré
+@msg	{name}'s clone has local changes, so it was only fetched	Le clone de {name} contient des modifications locales ; il a seulement été récupéré
+@msg	{name}'s source code updated ({n} new commits)	Code source de {name} mis à jour ({n} nouveaux commits)
+@msg	Couldn't update {name}'s source code: {e}	Impossible de mettre à jour le code source de {name} : {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git n'est pas installé. Installez-le depuis git-scm.com, puis réessayez.
+	Code	Code
+	Open repos folder	Ouvrir le dossier des dépôts
+	Change folder…	Changer de dossier…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Clone le code source de chaque application dans {path}, ou met à jour les clones qui s'y trouvent. Changez le dossier dans Réglages → Code source.
+@msg	Couldn't open the folder: {e}	Impossible d'ouvrir le dossier : {e}

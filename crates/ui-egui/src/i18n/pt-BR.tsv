@@ -350,3 +350,53 @@ filter	Installed	Instalados
 	Replace what's there?	Substituir o que já existe?
 	{path} already exists. Installing {name} will overwrite it.	{path} já existe. Instalar o {name} vai substituí-lo.
 	Replace	Substituir
+# Source code repos (clone, check and update with git).
+	Repos	Repositórios
+	Not cloned	Não clonado
+	Waiting…	Aguardando…
+	Cloning…	Clonando…
+	Fetching…	Buscando…
+	The folder isn't a git repository	A pasta não é um repositório git
+	A clone of another repository	Um clone de outro repositório
+	Git isn't installed	O Git não está instalado
+	detached	desanexado
+	diverged	divergente
+	up to date	atualizado
+	modified	modificado
+	Checking repos…	Verificando repositórios…
+	Check repos	Verificar repositórios
+	Fetch every cloned repo to see what's new, without changing any files	Busca cada repositório clonado para ver o que há de novo, sem alterar nenhum arquivo
+	Repos: {count} to go	Repositórios: faltam {count}
+	Update repos ({count})	Atualizar repositórios ({count})
+	Update repos	Atualizar repositórios
+	Download all repos	Baixar todos os repositórios
+	Git isn't installed. Install it from git-scm.com, then try again.	O Git não está instalado. Instale-o em git-scm.com e tente novamente.
+	Update repository	Atualizar repositório
+	Clone repository	Clonar repositório
+	Open repository folder	Abrir pasta do repositório
+	Open folder	Abrir pasta
+	Source code	Código-fonte
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	"Baixar todos os repositórios" clona o repositório do GitHub de cada aplicativo com todo o histórico; clones com alterações locais são apenas buscados, nunca sobrescritos. Requer o Git.
+	Get Git	Obter o Git
+	Repos folder	Pasta dos repositórios
+	Each app's repo is cloned into its own folder in here.	O repositório de cada aplicativo é clonado aqui, em uma pasta própria.
+@plural	{n} update|{n} updates	{n} atualização|{n} atualizações
+@plural	{n} local commit|{n} local commits	{n} commit local|{n} commits locais
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} já existe e não é um repositório git, então não foi alterado
+@msg	{path} is a clone of another repository, so it was left alone	{path} é um clone de outro repositório, então não foi alterado
+@msg	Couldn't fetch {name}'s source code: {e}	Não foi possível buscar o código-fonte de {name}: {e}
+@msg	Couldn't create {path}: {e}	Não foi possível criar {path}: {e}
+@msg	{name}'s source code was cloned	O código-fonte de {name} foi clonado
+@msg	Couldn't clone {name}'s source code: {e}	Não foi possível clonar o código-fonte de {name}: {e}
+@msg	{name}'s source code is up to date	O código-fonte de {name} está atualizado
+@msg	{name}'s clone isn't on a branch, so it was only fetched	O clone de {name} não está em nenhum branch, então só foi buscado
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	O clone de {name} tem commits locais que não estão no GitHub, então só foi buscado
+@msg	{name}'s clone has local changes, so it was only fetched	O clone de {name} tem alterações locais, então só foi buscado
+@msg	{name}'s source code updated ({n} new commits)	Código-fonte de {name} atualizado ({n} commits novos)
+@msg	Couldn't update {name}'s source code: {e}	Não foi possível atualizar o código-fonte de {name}: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	O Git não está instalado. Instale-o em git-scm.com e tente novamente.
+	Code	Código
+	Open repos folder	Abrir pasta dos repositórios
+	Change folder…	Alterar pasta…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Clona o código-fonte de cada aplicativo em {path} ou atualiza os clones que já estão lá. Altere a pasta em Configurações → Código-fonte.
+@msg	Couldn't open the folder: {e}	Não foi possível abrir a pasta: {e}

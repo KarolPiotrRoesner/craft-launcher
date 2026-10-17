@@ -57,6 +57,22 @@ pub enum Command {
     },
     /// Change how the backend behaves.
     Configure(BackendOptions),
+    /// Clone the app's source code repo into the repos folder, or bring an existing clone up to
+    /// date (fetch, then fast-forward only). Local work is never overwritten. Repo jobs run one at
+    /// a time; each answers with [`Event::Repo`] updates and an [`Event::RepoFinished`].
+    SyncRepo {
+        app: String,
+    },
+    /// Fetch every cloned repo without changing its files, so each [`RepoState::Ready`] says how
+    /// many commits are waiting. Ends with [`Event::ReposChecked`].
+    CheckRepos,
+    /// Look again at the clones on disk (no network).
+    DetectRepos,
+    /// Open the app's clone in the file manager, or with `None` (or no clone yet) the folder the
+    /// repos are cloned into, creating it when it isn't there yet.
+    OpenRepoFolder {
+        app: Option<String>,
+    },
 }
 
 /// Parent folders for new installs. Existing installations keep their recorded location.
@@ -82,6 +98,57 @@ pub struct BackendOptions {
     pub kinds: Vec<PackageKind>,
     /// Offer pre-releases (`0.6.0-rc.1`) as updates.
     pub prereleases: bool,
+    /// The folder the source code repos are cloned into (`None`: the backend's default).
+    pub repos_root: Option<String>,
+}
+
+/// Where a clone of an app's source code repo stands.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RepoState {
+    NotCloned,
+    /// Waiting for the repo jobs ahead of it.
+    Queued,
+    Cloning,
+    /// Fetching (and, for [`Command::SyncRepo`], fast-forwarding).
+    Fetching,
+    Ready(RepoInfo),
+    /// The folder exists but isn't a git repo: left alone.
+    NotARepo,
+    /// The clone's `origin` is some other repo: left alone.
+    ForeignRemote,
+    /// `git` isn't installed (or not on `PATH`).
+    GitMissing,
+}
+
+impl RepoState {
+    /// A repo job is queued or running.
+    pub fn busy(&self) -> bool {
+        matches!(self, Self::Queued | Self::Cloning | Self::Fetching)
+    }
+
+    /// There is a usable clone on disk.
+    pub fn cloned(&self) -> bool {
+        matches!(self, Self::Ready(_))
+    }
+}
+
+/// A clone's checkout, as of the last look.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RepoInfo {
+    /// The branch checked out (`None`: a detached HEAD).
+    pub branch: Option<String>,
+    /// The short hash of the commit checked out.
+    pub head: String,
+    /// Commits on the remote branch that aren't here yet, as of the last fetch.
+    pub behind: u32,
+    /// Local commits the remote doesn't have.
+    pub ahead: u32,
+    /// Uncommitted changes in the working tree.
+    pub modified: bool,
+    /// The program version in the clone's `Cargo.toml` (`0.6.0`).
+    pub version: Option<String>,
+    /// The day of the commit checked out (`2026-10-15`).
+    pub date: Option<String>,
 }
 
 /// The answer to "what's the latest release of this app?".
@@ -228,6 +295,21 @@ pub enum Event {
         key: String,
         result: Result<Vec<u8>, String>,
     },
+    /// Where an app's source code clone stands.
+    Repo {
+        app: String,
+        state: RepoState,
+    },
+    /// A repo job ended: `Ok` carries a short message, `Err` what went wrong or why it was left
+    /// alone.
+    RepoFinished {
+        app: String,
+        result: Result<String, String>,
+    },
+    /// [`Command::CheckRepos`] has fetched every clone.
+    ReposChecked,
+    /// The folder the repos are cloned into, once known or changed.
+    ReposFolder(String),
     CheckStarted,
     CheckFinished {
         /// Unix seconds.
@@ -248,6 +330,8 @@ pub struct Capabilities {
     /// The launcher can update itself in place and restart (an installed build, not a dev build or
     /// a Flatpak). Without it the UI offers the download instead.
     pub self_update: bool,
+    /// Clone and update the apps' source code repos with `git` (desktop, outside a sandbox).
+    pub clone_repos: bool,
 }
 
 /// The UI's view of a backend.
@@ -283,5 +367,6 @@ mod tests {
         let options: BackendOptions = serde_json::from_str(r#"{"kinds":[],"prereleases":true}"#).unwrap();
         assert!(options.prereleases);
         assert_eq!(options.install_locations, InstallLocations::default());
+        assert_eq!(options.repos_root, None);
     }
 }

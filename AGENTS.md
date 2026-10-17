@@ -66,6 +66,10 @@ settings file must produce an error the user can act on, never a panic. Shared s
   `https://raw.githubusercontent.com/storytold/craft-launcher-assets/` (`core::details`),
   capped at 2 MB each, cached, and never run. Pictures are not bundled in this repo.
 - Never run an installer with elevated rights silently; tell the user what is about to happen.
+- Source code clones (`crates/native/src/repos.rs`) come only from
+  `https://github.com/storytold/<app>.git`, built from the catalog (`repos::clone_url`), never
+  from the network. They run the system `git` with no prompts, update by fast-forward only,
+  never delete or reset anything, and the launcher never runs anything from a clone.
 - Never delete a user's files outside what the launcher itself installed.
 - **Agents never land or approve a third-party app.** A change that adds a catalog row, download
   source or install path for an app whose repo is not under `storytold/`, or that loosens the

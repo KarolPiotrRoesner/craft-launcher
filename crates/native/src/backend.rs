@@ -10,7 +10,7 @@ use artcraft_launcher_core::feed::{Feed, FeedAnswer};
 use artcraft_launcher_core::platform::{Arch, Os, Platform, pick_asset};
 use artcraft_launcher_core::protocol::{
     Backend, BackendOptions, CANCELLED, Capabilities, Command, Event, INSTALL_CANCELLED, JobPhase, LatestRelease, Origin, PAUSED, PausedDownload,
-    Source,
+    RepoState, Source,
 };
 use artcraft_launcher_core::release::{Asset, Release};
 use artcraft_launcher_core::{CraftApp, Installed, PackageKind, SUITE, version};
@@ -21,6 +21,7 @@ use crate::install::{self, Job};
 use crate::manifest::Manifest;
 use crate::paths::Paths;
 use crate::process;
+use crate::repos;
 use crate::source::{GitHubSource, ReleaseSource};
 
 /// The longest the launcher's own update waits for other installs to end before it gives up
@@ -80,6 +81,22 @@ struct Shared {
     feed_throttle: Mutex<FeedThrottle>,
     /// Apps whose details pictures are on their way (a second request meanwhile does nothing).
     pictures_busy: Mutex<std::collections::HashSet<&'static str>>,
+    /// Apps with a repo job queued or running (a second request meanwhile does nothing).
+    repos_busy: Mutex<std::collections::HashSet<&'static str>>,
+    /// The repo workers' queue, once they have started.
+    repo_queue: Mutex<Option<std::sync::mpsc::Sender<RepoJob>>>,
+    /// Checks queued or running; [`Event::ReposChecked`] goes out when the last one ends.
+    checks_pending: Mutex<usize>,
+}
+
+/// How many repo jobs run at once: enough to overlap the waiting on GitHub, few enough not to
+/// look like a flood to it.
+const REPO_WORKERS: usize = 4;
+
+/// Work for the repo workers.
+struct RepoJob {
+    app: &'static CraftApp,
+    mode: repos::Mode,
 }
 
 impl Shared {
@@ -135,11 +152,15 @@ impl NativeBackend {
             feed_ok_at: Mutex::new(None),
             feed_throttle: Mutex::new(FeedThrottle::load(&paths.feed_throttle(), crate::now())),
             pictures_busy: Mutex::new(std::collections::HashSet::new()),
+            repos_busy: Mutex::new(std::collections::HashSet::new()),
+            repo_queue: Mutex::new(None),
+            checks_pending: Mutex::new(0),
             last_check: Mutex::new(None),
         });
         let backend = Self { shared, paths, http, source, platform: native_platform(), self_install: crate::self_update::current() };
         backend.replay_cache();
         backend.detect_all();
+        backend.detect_repos();
         backend
     }
 
@@ -758,6 +779,42 @@ fn limit_notice(source_used: Source, limited_until: Option<i64>) -> Option<i64> 
     limited_until.filter(|_| matches!(source_used, Source::GitHubPages | Source::Cache))
 }
 
+/// The folder the repos are cloned into: the user's choice, or `Documents/Craft Repos`.
+fn repos_root(options: &BackendOptions) -> std::path::PathBuf {
+    options.repos_root.as_deref().map(str::trim).filter(|r| !r.is_empty()).map_or_else(repos::default_root, std::path::PathBuf::from)
+}
+
+/// Runs one repo job on a repo worker's thread.
+fn run_repo_job(shared: &Shared, job: RepoJob) {
+    let RepoJob { app, mode } = job;
+    // Read at the start of each job, so a folder changed while jobs wait applies to them.
+    let root = repos_root(&shared.options.lock().unwrap_or_else(PoisonError::into_inner));
+    let (state, result) = match repos::clone_url(app) {
+        Some(url) => repos::sync(app.name, &repos::checkout(&root, app), &url, mode, |step| {
+            shared.emit(Event::Repo { app: app.id.to_string(), state: step });
+        }),
+        None => (RepoState::NotCloned, Err(format!("{} has no repo under github.com/storytold", app.name))),
+    };
+    shared.repos_busy.lock().unwrap_or_else(PoisonError::into_inner).remove(app.id);
+    shared.emit(Event::Repo { app: app.id.to_string(), state });
+    // A check reports once, at the end; a clone that wasn't there to check says nothing.
+    if mode == repos::Mode::Sync || result.is_err() {
+        shared.emit(Event::RepoFinished { app: app.id.to_string(), result });
+    }
+    if mode == repos::Mode::Check {
+        check_done(shared);
+    }
+}
+
+/// Counts off one check, and says so when it was the last.
+fn check_done(shared: &Shared) {
+    let mut pending = shared.checks_pending.lock().unwrap_or_else(PoisonError::into_inner);
+    *pending = pending.saturating_sub(1);
+    if *pending == 0 {
+        shared.emit(Event::ReposChecked);
+    }
+}
+
 /// The repo to ask GitHub about, following the feed's repo renames.
 fn feed_repo(feed: Option<&Feed>, app: &CraftApp) -> String {
     feed.map_or_else(|| app.repo.to_string(), |f| f.repo_for(app))
@@ -927,6 +984,66 @@ impl Drop for PicturesBusy {
 }
 
 impl NativeBackend {
+    /// Reports where every clone stands (no network), skipping apps with a repo job on the way.
+    fn detect_repos(&self) {
+        let (shared, root) = (self.shared.clone(), repos_root(&self.options()));
+        std::thread::spawn(move || {
+            shared.emit(Event::ReposFolder(root.display().to_string()));
+            let git = repos::git_available();
+            for app in &SUITE {
+                let Some(url) = repos::clone_url(app) else { continue };
+                let state = if git { repos::status(&repos::checkout(&root, app), &url) } else { RepoState::GitMissing };
+                if !shared.repos_busy.lock().unwrap_or_else(PoisonError::into_inner).contains(app.id) {
+                    shared.emit(Event::Repo { app: app.id.to_string(), state });
+                }
+            }
+        });
+    }
+
+    /// Queues a repo job for `app` unless one is already queued or running; says whether it did.
+    fn queue_repo(&self, app: &str, mode: repos::Mode) -> bool {
+        let Some(def) = SUITE.iter().find(|a| a.id == app) else { return false };
+        if !self.shared.repos_busy.lock().unwrap_or_else(PoisonError::into_inner).insert(def.id) {
+            return false;
+        }
+        if mode == repos::Mode::Check {
+            *self.shared.checks_pending.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+        }
+        self.shared.emit(Event::Repo { app: def.id.to_string(), state: RepoState::Queued });
+        self.push_repo_job(RepoJob { app: def, mode });
+        true
+    }
+
+    /// Hands `job` to the repo workers, starting them the first time.
+    fn push_repo_job(&self, job: RepoJob) {
+        let mut queue = self.shared.repo_queue.lock().unwrap_or_else(PoisonError::into_inner);
+        let tx = queue.get_or_insert_with(|| {
+            let (tx, rx) = std::sync::mpsc::channel::<RepoJob>();
+            let rx = Arc::new(Mutex::new(rx));
+            for _ in 0..REPO_WORKERS {
+                let (shared, rx) = (self.shared.clone(), rx.clone());
+                std::thread::spawn(move || {
+                    loop {
+                        // Held only while waiting, so the others run their jobs meanwhile.
+                        let next = rx.lock().unwrap_or_else(PoisonError::into_inner).recv();
+                        let Ok(job) = next else { break };
+                        run_repo_job(&shared, job);
+                    }
+                });
+            }
+            tx
+        });
+        if let Err(std::sync::mpsc::SendError(job)) = tx.send(job) {
+            log::error!("the repo workers have stopped");
+            self.shared.repos_busy.lock().unwrap_or_else(PoisonError::into_inner).remove(job.app.id);
+            if job.mode == repos::Mode::Check {
+                check_done(&self.shared);
+            }
+            // Take back its "Waiting…".
+            self.detect_repos();
+        }
+    }
+
     /// Starts fetching the pictures of an app's details page, unless they are already on their way.
     /// An app without a page, or a name that isn't an app, is ignored.
     fn fetch_screenshots(&self, app: &str) {
@@ -994,13 +1111,44 @@ impl Backend for NativeBackend {
             }
             Command::UpdateLauncher => self.update_launcher(),
             Command::FetchScreenshots { app } => self.fetch_screenshots(&app),
+            Command::SyncRepo { app } => {
+                self.queue_repo(&app, repos::Mode::Sync);
+            }
+            Command::CheckRepos => {
+                let mut queued = false;
+                for app in &SUITE {
+                    queued |= self.queue_repo(app.id, repos::Mode::Check);
+                }
+                // Nothing to wait for: every clone is busy with a job of its own.
+                if !queued && *self.shared.checks_pending.lock().unwrap_or_else(PoisonError::into_inner) == 0 {
+                    self.shared.emit(Event::ReposChecked);
+                }
+            }
+            Command::DetectRepos => self.detect_repos(),
+            Command::OpenRepoFolder { app } => {
+                let root = repos_root(&self.options());
+                let clone = app.as_deref().and_then(CraftApp::by_id).map(|def| repos::checkout(&root, def)).filter(|p| p.is_dir());
+                let result = match clone {
+                    Some(path) => process::open(path.as_os_str()),
+                    None => std::fs::create_dir_all(&root)
+                        .map_err(|e| format!("couldn't create {} ({e})", root.display()))
+                        .and_then(|()| process::open(root.as_os_str())),
+                };
+                if let Err(e) = result {
+                    let result = Err(format!("Couldn't open the folder: {e}"));
+                    self.shared.emit(Event::RepoFinished { app: app.unwrap_or_default(), result });
+                }
+            }
             Command::Configure(options) => {
-                let changed_pre = {
+                let (changed_pre, changed_repos) = {
                     let mut o = self.shared.options.lock().unwrap_or_else(PoisonError::into_inner);
-                    let changed = o.prereleases != options.prereleases;
+                    let changed = (o.prereleases != options.prereleases, o.repos_root != options.repos_root);
                     *o = options;
                     changed
                 };
+                if changed_repos {
+                    self.detect_repos();
+                }
                 // Another package format means another file to download.
                 let options = self.options();
                 for app in &SUITE {
@@ -1023,7 +1171,7 @@ impl Backend for NativeBackend {
             Some(Os::Windows) => "Show in Explorer",
             _ => "Show in Files",
         };
-        Capabilities { manage_apps: true, reveal_label, self_update: self.self_install.is_some() }
+        Capabilities { manage_apps: true, reveal_label, self_update: self.self_install.is_some(), clone_repos: !process::in_sandbox() }
     }
 
     fn platform(&self) -> Option<Platform> {
@@ -1065,6 +1213,18 @@ mod tests {
         fn save(&self) {}
     }
 
+    #[test]
+    fn parallel_checks_report_done_once_the_last_one_ends() {
+        let shared = shared();
+        *shared.checks_pending.lock().unwrap() = 3;
+        let done = |s: &Shared| s.events.lock().unwrap().iter().filter(|e| matches!(e, Event::ReposChecked)).count();
+        check_done(&shared);
+        check_done(&shared);
+        assert_eq!(done(&shared), 0);
+        check_done(&shared);
+        assert_eq!(done(&shared), 1);
+    }
+
     fn shared() -> Shared {
         Shared {
             events: Mutex::new(Vec::new()),
@@ -1086,6 +1246,9 @@ mod tests {
             feed_ok_at: Mutex::new(None),
             feed_throttle: Mutex::new(FeedThrottle::new()),
             pictures_busy: Mutex::new(std::collections::HashSet::new()),
+            repos_busy: Mutex::new(std::collections::HashSet::new()),
+            repo_queue: Mutex::new(None),
+            checks_pending: Mutex::new(0),
         }
     }
 

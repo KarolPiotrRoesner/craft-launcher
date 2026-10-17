@@ -3,7 +3,7 @@
 
 use artcraft_launcher_core::details::AppDetails;
 use artcraft_launcher_core::platform::pick_asset;
-use artcraft_launcher_core::protocol::{Command, JobPhase};
+use artcraft_launcher_core::protocol::{Command, JobPhase, RepoState};
 use artcraft_launcher_core::status::AppStatus;
 use artcraft_launcher_core::{AppGroup, SUITE, time};
 use egui::{Color32, CornerRadius, FontId, Rect, RichText, Sense, Stroke, Ui, vec2};
@@ -58,6 +58,8 @@ const FOOTER_MIN_STATUS_W: f32 = 300.0;
 
 const CARD_MIN_W: f32 = 320.0;
 const CARD_H: f32 = 280.0;
+/// The repo line under a card's version line (desktop): its row and the gap above it.
+const CARD_REPO_H: f32 = 40.0;
 /// The card's top strip: number tab and links.
 const STRIP_H: f32 = 40.0;
 const CARD_PAD: f32 = 20.0;
@@ -97,6 +99,12 @@ impl LauncherUi {
                 }
                 ui.add_space(6.0);
                 widgets::rule(ui, h);
+                if self.caps.clone_repos {
+                    ui.add_space(6.0);
+                    self.repo_links(ui, h);
+                    ui.add_space(6.0);
+                    widgets::rule(ui, h);
+                }
                 ui.add_space(6.0);
                 // Right to left: Table, then Grid, so they read Grid · Table.
                 for (mode, label, tip) in
@@ -262,6 +270,112 @@ impl LauncherUi {
         });
     }
 
+    /// A card's source code line: `CODE  v0.6.0 · 3 updates` in the colour of its state (all of it on hover),
+    /// then the folder button and Clone or Update (a spinner while a repo job runs).
+    fn repo_line(&mut self, ui: &mut Ui, entry: &AppEntry, t: &Tokens) {
+        let id = entry.app.id;
+        let state = entry.repo.clone().unwrap_or(RepoState::NotCloned);
+        ui.horizontal(|ui| {
+            ui.set_height(theme::CONTROL_H);
+            widgets::hud(ui, tl!("Code"), t.faint);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.spacing_mut().item_spacing.x = 4.0;
+                if state.busy() {
+                    let (rect, _) = ui.allocate_exact_size(vec2(theme::CONTROL_H, theme::CONTROL_H), Sense::hover());
+                    egui::Spinner::new().size(14.0).color(t.muted).paint_at(ui, Rect::from_center_size(rect.center(), vec2(14.0, 14.0)));
+                } else {
+                    let tip = if state.cloned() { tl!("Update repository") } else { tl!("Clone repository") };
+                    if widgets::glyph_button(ui, widgets::Glyph::Sync, tip).clicked() {
+                        self.send(Command::SyncRepo { app: id.to_string() });
+                    }
+                }
+                let tip = if state.cloned() { tl!("Open repository folder") } else { tl!("Open repos folder") };
+                if widgets::glyph_button(ui, widgets::Glyph::Folder, tip).clicked() {
+                    self.send(Command::OpenRepoFolder { app: Some(id.to_string()) });
+                }
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| repo_status(ui, entry, t, 12.5));
+            });
+        });
+    }
+
+    /// The header's source code links, right to left: "Check repos", then "Download all repos"
+    /// (which says "Update repos (N)" once a check found new commits). While repo jobs run they
+    /// say so and do nothing.
+    fn repo_links(&mut self, ui: &mut Ui, h: f32) {
+        let busy = self.entries.iter().filter(|e| e.repo_busy()).count();
+        let cloned = self.entries.iter().filter(|e| e.repo.as_ref().is_some_and(RepoState::cloned)).count();
+        let waiting = self.entries.iter().filter(|e| e.repo_behind() > 0).count();
+        let syncing = busy > 0 && !self.checking_repos;
+
+        let check = if self.checking_repos { tl!("Checking repos…") } else { tl!("Check repos") };
+        let check_tip = tl!("Fetch every cloned repo to see what's new, without changing any files");
+        let label = if syncing {
+            fmt(tl!("Repos: {count} to go"), &[("count", &busy.to_string())])
+        } else if waiting > 0 {
+            fmt(tl!("Update repos ({count})"), &[("count", &waiting.to_string())])
+        } else if cloned == self.entries.len() {
+            tl!("Update repos").to_string()
+        } else {
+            tl!("Download all repos").to_string()
+        };
+        let folder = self.repos_folder.clone().unwrap_or_default();
+        let tip = fmt(
+            tl!("Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code."),
+            &[("path", &folder)],
+        );
+
+        // Both links where they fit beside Grid and Table; otherwise one "Repos" link with both
+        // in a menu (narrow windows, longer languages).
+        let t = Tokens::get(ui.ctx());
+        let width = |ui: &Ui, text: &str| widgets::hud_galley(ui, text, t.muted).size().x + 20.0;
+        let room_for_views = 180.0;
+        let (mut sync, mut fetch, mut open_folder, mut change_folder) = (false, false, false, false);
+        if ui.available_width() >= width(ui, &label) + width(ui, check) + room_for_views {
+            fetch = widgets::nav_link(ui, check, check_tip, h, self.checking_repos).clicked();
+            sync = widgets::nav_link(ui, &label, &tip, h, syncing).clicked();
+        } else {
+            let compact = if busy > 0 { fmt(tl!("Repos: {count} to go"), &[("count", &busy.to_string())]) } else { tl!("Repos").to_string() };
+            let resp = widgets::nav_link(ui, &compact, &tip, h, busy > 0);
+            egui::Popup::menu(&resp).show(|ui| {
+                ui.set_min_width(200.0);
+                if ui.add_enabled(busy == 0, egui::Button::new(label.as_str())).on_hover_text(tip.as_str()).clicked() {
+                    sync = true;
+                    ui.close();
+                }
+                if ui.add_enabled(busy == 0 && cloned > 0, egui::Button::new(check)).on_hover_text(check_tip).clicked() {
+                    fetch = true;
+                    ui.close();
+                }
+                ui.separator();
+                if ui.button(tl!("Open repos folder")).on_hover_text(folder.as_str()).clicked() {
+                    open_folder = true;
+                    ui.close();
+                }
+                if ui.button(tl!("Change folder…")).clicked() {
+                    change_folder = true;
+                    ui.close();
+                }
+            });
+        }
+        if open_folder {
+            self.send(Command::OpenRepoFolder { app: None });
+        }
+        if change_folder {
+            self.dialog = Some(Dialog::Settings);
+        }
+        if fetch && !self.checking_repos && busy == 0 && cloned > 0 {
+            self.check_repos();
+        }
+        if sync && busy == 0 {
+            if self.entries.iter().any(|e| e.repo == Some(RepoState::GitMissing)) {
+                let ctx = ui.ctx().clone();
+                self.toast(&ctx, tl!("Git isn't installed. Install it from git-scm.com, then try again."), true);
+            } else {
+                self.sync_all_repos();
+            }
+        }
+    }
+
     /// News from ArtCraft's release feed (and app renames), until the user dismisses each.
     fn announcements(&mut self, ui: &mut Ui) {
         let t = Tokens::get(ui.ctx());
@@ -383,12 +497,13 @@ impl LauncherUi {
         let cols = ((width / CARD_MIN_W).floor() as usize).max(1);
         let card_w = (width + (cols as f32 - 1.0)) / cols as f32;
         let rows = ids.len().div_ceil(cols);
-        let height = rows as f32 * (CARD_H - 1.0) + 1.0;
+        let card_h = if self.caps.clone_repos { CARD_H + CARD_REPO_H } else { CARD_H };
+        let height = rows as f32 * (card_h - 1.0) + 1.0;
         let (area, _) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
         for (i, id) in ids.iter().enumerate() {
             let (row, col) = (i / cols, i % cols);
-            let min = area.min + vec2(col as f32 * (card_w - 1.0), row as f32 * (CARD_H - 1.0));
-            self.card(ui, id, Rect::from_min_size(min, vec2(card_w, CARD_H)));
+            let min = area.min + vec2(col as f32 * (card_w - 1.0), row as f32 * (card_h - 1.0));
+            self.card(ui, id, Rect::from_min_size(min, vec2(card_w, card_h)));
         }
         ui.add_space(24.0);
     }
@@ -483,6 +598,10 @@ impl LauncherUi {
         });
         ui.add_space(4.0);
         ui.label(RichText::new(version_line(&entry, &status)).size(12.5).color(t.muted));
+        if self.caps.clone_repos {
+            ui.add_space(6.0);
+            self.repo_line(ui, &entry, &t);
+        }
         ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
             ui.horizontal(|ui| self.actions(ui, &entry, &status, inner.width()));
         });
@@ -611,11 +730,18 @@ impl LauncherUi {
                                 });
                             });
                             row.col(|ui| {
-                                let (text, tone) = model::entry_status_text(&entry, &status, self.caps.manage_apps);
-                                let r = widgets::badge(ui, &text, widgets::tone_color(&t, tone));
-                                if let Some(f) = entry.failure() {
-                                    r.on_hover_text(fmt(tl!("Couldn't check for updates: {f}"), &[("f", f)]));
-                                }
+                                ui.vertical(|ui| {
+                                    ui.spacing_mut().item_spacing.y = 4.0;
+                                    let (text, tone) = model::entry_status_text(&entry, &status, self.caps.manage_apps);
+                                    let r = widgets::badge(ui, &text, widgets::tone_color(&t, tone));
+                                    if let Some(f) = entry.failure() {
+                                        r.on_hover_text(fmt(tl!("Couldn't check for updates: {f}"), &[("f", f)]));
+                                    }
+                                    // The repo's state under the status (its buttons are in the … menu).
+                                    if self.caps.clone_repos {
+                                        repo_status(ui, &entry, &t, 11.5);
+                                    }
+                                });
                             });
                             row.col(|ui| {
                                 let installed = entry.installed_label();
@@ -867,6 +993,19 @@ impl LauncherUi {
                     }
                 }
             }
+            if self.caps.clone_repos {
+                ui.separator();
+                let cloned = entry.repo.as_ref().is_some_and(RepoState::cloned);
+                let label = if cloned { tl!("Update repository") } else { tl!("Clone repository") };
+                if ui.add_enabled(!entry.repo_busy(), egui::Button::new(label)).clicked() {
+                    self.send(Command::SyncRepo { app: id.clone() });
+                    ui.close();
+                }
+                if cloned && ui.button(tl!("Open repository folder")).clicked() {
+                    self.send(Command::OpenRepoFolder { app: Some(id.clone()) });
+                    ui.close();
+                }
+            }
             // The drawer shows the links as buttons, so its menu leaves them out (but keeps Hide).
             if links {
                 ui.separator();
@@ -895,6 +1034,21 @@ impl LauncherUi {
             }
         });
     }
+}
+
+/// Where an app's clone stands, or why its last repo job didn't go through, in one truncated line
+/// with the whole of it on hover.
+fn repo_status(ui: &mut Ui, entry: &AppEntry, t: &Tokens, size: f32) {
+    let state = entry.repo.clone().unwrap_or(RepoState::NotCloned);
+    let (full, tone) = model::repo_text(&state);
+    let (short, _) = model::repo_text_short(&state);
+    // A job that didn't go through turns the line orange; why is on hover, with the rest.
+    let (color, tip) = match &entry.repo_note {
+        Some(note) => (t.warn, format!("{}\n{full}", crate::i18n::msg(note))),
+        None => (widgets::tone_color(t, tone), full),
+    };
+    let shown = short;
+    ui.add(egui::Label::new(RichText::new(shown).size(size).color(color)).truncate()).on_hover_text(tip);
 }
 
 fn sort_label(k: SortKey) -> &'static str {

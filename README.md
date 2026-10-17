@@ -124,6 +124,16 @@ package or portable folder, the AppImage, or the `.deb`/`.rpm`) and reopens it.
 Updates use the same format an app was installed with. Every download is checked against the
 release's published SHA-256 before it is installed, and a running app is never replaced.
 
+### Source code clones (this fork)
+
+**Download all repos** in the header clones every Craft App's GitHub repo
+(`https://github.com/storytold/<app>.git`, full history) into `Documents/Craft Repos/<app>` and
+brings existing clones up to date. **Check repos** only fetches, then shows which repos have new
+commits. Each app's `…` menu and details drawer clone, update or open its own repo. Settings →
+Source code picks another folder. It needs Git on the `PATH`. Updates are fast-forward only: a
+clone with local changes or commits is fetched and left as it is, and a folder that isn't a clone
+of that repo is never touched.
+
 The launcher writes its log to `logs/artcraft-launcher.log` in its data folder
 (`~/.local/share/artcraft-launcher` on Linux, `~/Library/Application Support/ArtCraft Launcher`
 on macOS, `%LOCALAPPDATA%\ArtCraft Launcher` on Windows, `ArtCraftLauncherData` beside the

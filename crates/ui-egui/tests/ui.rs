@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 
 use artcraft_launcher_core::details::AppDetails;
 use artcraft_launcher_core::protocol::{
-    Backend, CANCELLED, Capabilities, Command, Event, INSTALL_CANCELLED, JobPhase, LatestRelease, Origin, PausedDownload, Source,
+    Backend, CANCELLED, Capabilities, Command, Event, INSTALL_CANCELLED, JobPhase, LatestRelease, Origin, PausedDownload, RepoInfo, RepoState, Source,
 };
 use artcraft_launcher_core::release::{Asset, Release};
 use artcraft_launcher_core::status::InstallSource;
@@ -83,7 +83,7 @@ impl Backend for Fake {
         out
     }
     fn capabilities(&self) -> Capabilities {
-        Capabilities { manage_apps: self.manage, reveal_label: "Show in Finder", self_update: self.manage }
+        Capabilities { manage_apps: self.manage, reveal_label: "Show in Finder", self_update: self.manage, clone_repos: self.manage }
     }
     fn platform(&self) -> Option<Platform> {
         Some(Platform { os: Os::MacOs, arch: Arch::Arm64 })
@@ -326,10 +326,11 @@ fn a_fresh_install_confirms_the_folder_and_configures_before_installing() {
     h.run_steps(8);
     h.get_by_label("Settings").click();
     h.run_steps(4);
-    h.get_by_label("Browse…").scroll_to_me();
+    // The first folder field in Settings is the install folder (the repos folder follows).
+    h.get_all_by_label("Browse…").next().unwrap().scroll_to_me();
     h.run_steps(4);
     *picked.borrow_mut() = Some("/Volumes/Craft Apps".into());
-    h.get_by_label("Browse…").click();
+    h.get_all_by_label("Browse…").next().unwrap().click();
     h.run_steps(3);
     assert_eq!(h.state().as_ref().unwrap().settings.install_locations.root.as_deref(), Some("/Volumes/Craft Apps"));
     h.get_by_label("Done").click();
@@ -386,9 +387,9 @@ fn use_default_removes_an_app_override_and_settings_can_reset_the_root() {
     );
     h.get_by_label("Settings").click();
     h.run_steps(3);
-    h.get_by_label("Use default").scroll_to_me();
+    h.get_all_by_label("Use default").next().unwrap().scroll_to_me();
     h.run_steps(3);
-    h.get_by_label("Use default").click();
+    h.get_all_by_label("Use default").next().unwrap().click();
     h.run_steps(2);
     assert_eq!(h.state().as_ref().unwrap().settings.install_locations.root, None);
 }
@@ -409,6 +410,9 @@ fn windows_package_choice_can_select_portable_and_configures_the_backend() {
     h.run_steps(8);
     h.get_by_label("Settings").click();
     h.run_steps(4);
+    // The Source code section comes first: bring the choice into view, so its list opens on screen.
+    h.get_by_value("Installer (.msi)").scroll_to_me();
+    h.run_steps(3);
     h.get_by_value("Installer (.msi)").click();
     h.run_steps(2);
     h.get_by_label("Portable (.zip)").click();
@@ -1703,4 +1707,190 @@ fn an_occupied_folder_asks_before_replacing_it() {
     h.run_steps(2);
     assert_eq!(*sent.borrow(), [Command::Replace { app: "photocraft".into() }]);
     assert!(h.query_by_label("Replace").is_none());
+}
+
+fn repo_commands(sent: &RefCell<Vec<Command>>) -> Vec<Command> {
+    sent.borrow().iter().filter(|c| matches!(c, Command::SyncRepo { .. } | Command::CheckRepos | Command::OpenRepoFolder { .. })).cloned().collect()
+}
+
+fn clone_of(behind: u32) -> RepoState {
+    RepoState::Ready(RepoInfo {
+        branch: Some("main".into()),
+        head: "a1b2c3d".into(),
+        behind,
+        ahead: 0,
+        modified: false,
+        version: Some("0.6.0".into()),
+        date: Some("2026-10-15".into()),
+    })
+}
+
+#[test]
+fn download_all_repos_asks_for_every_app() {
+    let mut ev = events();
+    ev.extend(SUITE.iter().map(|a| Event::Repo { app: a.id.into(), state: RepoState::NotCloned }));
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    // Nothing is cloned yet, so there is nothing to check.
+    h.get_by_label("Check repos").click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), []);
+    h.get_by_label("Download all repos").click();
+    h.run_steps(2);
+    let want: Vec<Command> = SUITE.iter().map(|a| Command::SyncRepo { app: a.id.into() }).collect();
+    assert_eq!(repo_commands(&sent), want);
+    snapshot(&mut h, "grid-repos-light");
+}
+
+#[test]
+fn check_repos_fetches_and_the_button_counts_repos_with_new_commits() {
+    let mut ev = events();
+    ev.extend(SUITE.iter().map(|a| Event::Repo { app: a.id.into(), state: clone_of(if a.id == "photocraft" { 3 } else { 0 }) }));
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    h.get_by_label("Update repos (1)");
+    h.get_by_label("Check repos").click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::CheckRepos]);
+    h.get_by_label("Checking repos…");
+    // The drawer says how far behind the clone is.
+    h.get_by_label("PhotoCraft details").click();
+    h.run_steps(6);
+    // The card says it short, the drawer in full.
+    h.get_by_label("v0.6.0 · 3 updates");
+    h.get_by_label("v0.6.0 · 3 updates · main · a1b2c3d · Oct 15, 2026");
+    snapshot(&mut h, "details-repo-light");
+}
+
+#[test]
+fn each_app_menu_clones_or_updates_its_repo() {
+    let mut ev = events();
+    ev.push(Event::Repo { app: "photocraft".into(), state: RepoState::NotCloned });
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Dark, true, 1.0);
+    h.run_steps(8);
+    h.get_all_by_label("…").next().unwrap().click();
+    h.run_steps(3);
+    // The menu's entry (the cards' repo buttons carry the same name).
+    h.get_all_by_label("Clone repository").last().unwrap().click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::SyncRepo { app: "photocraft".into() }]);
+
+    let (mut h, sent) =
+        harness_with(vec![Event::Repo { app: "photocraft".into(), state: clone_of(0) }], ViewMode::Grid, egui::Theme::Dark, true, 1.0);
+    h.run_steps(8);
+    h.get_all_by_label("…").next().unwrap().click();
+    h.run_steps(3);
+    h.get_all_by_label("Open repository folder").last().unwrap().click();
+    h.run_steps(2);
+    h.get_all_by_label("…").next().unwrap().click();
+    h.run_steps(3);
+    h.get_all_by_label("Update repository").last().unwrap().click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::OpenRepoFolder { app: Some("photocraft".into()) }, Command::SyncRepo { app: "photocraft".into() }]);
+}
+
+#[test]
+fn the_repos_folder_setting_reaches_the_backend() {
+    let (mut h, sent) =
+        harness_with(vec![Event::ReposFolder("/Users/me/Documents/Craft Repos".into())], ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    h.get_by_label("Settings").click();
+    h.run_steps(4);
+    let field = h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Repos folder");
+    field.scroll_to_me();
+    h.run_steps(3);
+    snapshot(&mut h, "settings-repos-light");
+    h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Repos folder").click();
+    h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Repos folder").type_text("D:/src/craft");
+    h.run_steps(3);
+    assert_eq!(h.state().as_ref().unwrap().settings.repos_folder.as_deref(), Some("D:/src/craft"));
+    assert!(sent.borrow().iter().any(|c| matches!(c, Command::Configure(o) if o.repos_root.as_deref() == Some("D:/src/craft"))));
+}
+
+#[test]
+fn the_web_shows_no_repo_buttons() {
+    let (mut h, _) = harness(ViewMode::Grid, egui::Theme::Light, false);
+    h.run_steps(6);
+    assert!(h.query_by_label("Download all repos").is_none());
+    assert!(h.query_by_label("Check repos").is_none());
+}
+
+#[test]
+fn a_narrow_window_folds_the_repo_links_into_a_menu() {
+    let mut ev = events();
+    ev.extend(SUITE.iter().map(|a| Event::Repo { app: a.id.into(), state: clone_of(0) }));
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.set_size(egui::vec2(720.0, 500.0));
+    h.run_steps(8);
+    assert!(h.query_by_label("Check repos").is_none());
+    h.get_by_label("Repos").click();
+    h.run_steps(3);
+    snapshot(&mut h, "header-repos-narrow-light");
+    h.get_by_label("Check repos").click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::CheckRepos]);
+}
+
+#[test]
+fn each_card_shows_its_clone_and_how_the_last_job_ended_without_a_toast() {
+    let mut ev = events();
+    ev.extend(SUITE.iter().map(|a| Event::Repo { app: a.id.into(), state: clone_of(0) }));
+    let note = "PhotoCraft's clone has local changes, so it was only fetched";
+    ev.push(Event::RepoFinished { app: "photocraft".into(), result: Err(note.into()) });
+    ev.push(Event::RepoFinished { app: "lightcraft".into(), result: Ok("LightCraft's source code is up to date".into()) });
+    ev.push(Event::ReposChecked);
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Dark, true, 1.0);
+    h.run_steps(8);
+    // No toast: the card's line turns orange (the reason is on hover), and nothing is said
+    // about the job that went through.
+    assert!(h.query_by_label(note).is_none());
+    assert!(h.query_by_label("LightCraft's source code is up to date").is_none());
+    // Up to date: just the version, in green.
+    assert!(h.query_all_by_label("v0.6.0").count() >= 2);
+    assert!(h.query_by_label("v0.6.0 · up to date · main · a1b2c3d · Oct 15, 2026").is_none());
+    snapshot(&mut h, "grid-repo-lines-dark");
+    h.get_all_by_label("Open repository folder").next().unwrap().click();
+    h.run_steps(2);
+    h.get_all_by_label("Update repository").next().unwrap().click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::OpenRepoFolder { app: Some("photocraft".into()) }, Command::SyncRepo { app: "photocraft".into() }]);
+}
+
+#[test]
+fn the_drawer_spells_out_why_a_repo_job_did_not_go_through() {
+    let note = "PhotoCraft's clone has local changes, so it was only fetched";
+    let ev = vec![
+        Event::Repo { app: "photocraft".into(), state: clone_of(1) },
+        Event::RepoFinished { app: "photocraft".into(), result: Err(note.into()) },
+    ];
+    let (mut h, _) = harness_with(ev, ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    h.get_by_label("v0.6.0 · 1 update");
+    h.get_by_label("PhotoCraft details").click();
+    h.run_steps(6);
+    h.get_by_label(note);
+}
+
+#[test]
+fn settings_open_the_repos_folder() {
+    let (mut h, sent) =
+        harness_with(vec![Event::ReposFolder("/Users/me/Documents/Craft Repos".into())], ViewMode::Grid, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    h.get_by_label("Settings").click();
+    h.run_steps(4);
+    h.get_by_label("Open folder").scroll_to_me();
+    h.run_steps(3);
+    h.get_by_label("Open folder").click();
+    h.run_steps(2);
+    assert_eq!(repo_commands(&sent), [Command::OpenRepoFolder { app: None }]);
+}
+
+#[test]
+fn the_table_shows_each_clone_under_its_status() {
+    let mut ev = events();
+    ev.push(Event::Repo { app: "photocraft".into(), state: clone_of(2) });
+    let (mut h, _) = harness_with(ev, ViewMode::Table, egui::Theme::Light, true, 1.0);
+    h.run_steps(8);
+    h.get_by_label("v0.6.0 · 2 updates");
+    snapshot(&mut h, "table-repos-light");
 }

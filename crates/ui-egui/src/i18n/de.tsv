@@ -362,3 +362,53 @@ filter	Installed	Installiert
 	Replace what's there?	Vorhandenes ersetzen?
 	{path} already exists. Installing {name} will overwrite it.	{path} existiert bereits. Die Installation von {name} überschreibt es.
 	Replace	Ersetzen
+# Source code repos (clone, check and update with git).
+	Repos	Repos
+	Not cloned	Nicht geklont
+	Waiting…	Wartet…
+	Cloning…	Wird geklont…
+	Fetching…	Wird abgerufen…
+	The folder isn't a git repository	Der Ordner ist kein Git-Repository
+	A clone of another repository	Ein Klon eines anderen Repositorys
+	Git isn't installed	Git ist nicht installiert
+	detached	losgelöst
+	diverged	abgewichen
+	up to date	aktuell
+	modified	geändert
+	Checking repos…	Repos werden geprüft…
+	Check repos	Repos prüfen
+	Fetch every cloned repo to see what's new, without changing any files	Ruft jedes geklonte Repo ab, um Neues zu sehen, ohne Dateien zu ändern
+	Repos: {count} to go	Repos: noch {count}
+	Update repos ({count})	Repos aktualisieren ({count})
+	Update repos	Repos aktualisieren
+	Download all repos	Alle Repos herunterladen
+	Git isn't installed. Install it from git-scm.com, then try again.	Git ist nicht installiert. Installiere es von git-scm.com und versuche es erneut.
+	Update repository	Repository aktualisieren
+	Clone repository	Repository klonen
+	Open repository folder	Repository-Ordner öffnen
+	Open folder	Ordner öffnen
+	Source code	Quellcode
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	„Alle Repos herunterladen“ klont das GitHub-Repo jeder App mit vollständiger Historie; Klone mit lokalen Änderungen werden nur abgerufen, nie überschrieben. Benötigt Git.
+	Get Git	Git herunterladen
+	Repos folder	Repo-Ordner
+	Each app's repo is cloned into its own folder in here.	Das Repo jeder App wird hier in einen eigenen Ordner geklont.
+@plural	{n} update|{n} updates	{n} Update|{n} Updates
+@plural	{n} local commit|{n} local commits	{n} lokaler Commit|{n} lokale Commits
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} existiert bereits und ist kein Git-Repository, daher wurde es nicht angetastet
+@msg	{path} is a clone of another repository, so it was left alone	{path} ist ein Klon eines anderen Repositorys, daher wurde es nicht angetastet
+@msg	Couldn't fetch {name}'s source code: {e}	Der Quellcode von {name} konnte nicht abgerufen werden: {e}
+@msg	Couldn't create {path}: {e}	{path} konnte nicht erstellt werden: {e}
+@msg	{name}'s source code was cloned	Der Quellcode von {name} wurde geklont
+@msg	Couldn't clone {name}'s source code: {e}	Der Quellcode von {name} konnte nicht geklont werden: {e}
+@msg	{name}'s source code is up to date	Der Quellcode von {name} ist aktuell
+@msg	{name}'s clone isn't on a branch, so it was only fetched	Der Klon von {name} ist auf keinem Branch, daher wurde nur abgerufen
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	Der Klon von {name} hat lokale Commits, die nicht auf GitHub sind, daher wurde nur abgerufen
+@msg	{name}'s clone has local changes, so it was only fetched	Der Klon von {name} hat lokale Änderungen, daher wurde nur abgerufen
+@msg	{name}'s source code updated ({n} new commits)	Quellcode von {name} aktualisiert ({n} neue Commits)
+@msg	Couldn't update {name}'s source code: {e}	Der Quellcode von {name} konnte nicht aktualisiert werden: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git ist nicht installiert. Installiere es von git-scm.com und versuche es erneut.
+	Code	Code
+	Open repos folder	Repo-Ordner öffnen
+	Change folder…	Ordner ändern…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Klont den Quellcode jeder App nach {path} oder bringt die Klone dort auf den neuesten Stand. Den Ordner änderst du unter Einstellungen → Quellcode.
+@msg	Couldn't open the folder: {e}	Der Ordner konnte nicht geöffnet werden: {e}

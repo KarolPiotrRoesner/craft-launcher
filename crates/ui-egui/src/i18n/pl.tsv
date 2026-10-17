@@ -364,3 +364,53 @@ filter	Installed	Zainstalowane
 	Replace what's there?	Zastąpić to, co tam jest?
 	{path} already exists. Installing {name} will overwrite it.	{path} już istnieje. Instalacja {name} go nadpisze.
 	Replace	Zastąp
+# Source code repos (clone, check and update with git).
+	Repos	Repozytoria
+	Not cloned	Nie sklonowano
+	Waiting…	Oczekuje…
+	Cloning…	Klonowanie…
+	Fetching…	Pobieranie zmian…
+	The folder isn't a git repository	Folder nie jest repozytorium git
+	A clone of another repository	Klon innego repozytorium
+	Git isn't installed	Git nie jest zainstalowany
+	detached	odłączone
+	diverged	rozbieżne
+	up to date	aktualne
+	modified	zmienione
+	Checking repos…	Sprawdzanie repozytoriów…
+	Check repos	Sprawdź repozytoria
+	Fetch every cloned repo to see what's new, without changing any files	Pobiera zmiany każdego sklonowanego repozytorium, by pokazać nowości, bez zmieniania plików
+	Repos: {count} to go	Repozytoria: zostało {count}
+	Update repos ({count})	Zaktualizuj repozytoria ({count})
+	Update repos	Zaktualizuj repozytoria
+	Download all repos	Pobierz wszystkie repozytoria
+	Git isn't installed. Install it from git-scm.com, then try again.	Git nie jest zainstalowany. Zainstaluj go z git-scm.com i spróbuj ponownie.
+	Update repository	Zaktualizuj repozytorium
+	Clone repository	Sklonuj repozytorium
+	Open repository folder	Otwórz folder repozytorium
+	Open folder	Otwórz folder
+	Source code	Kod źródłowy
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	„Pobierz wszystkie repozytoria” klonuje repozytorium GitHub każdej aplikacji z całą historią; klony z lokalnymi zmianami są tylko pobierane, nigdy nadpisywane. Wymaga Gita.
+	Get Git	Pobierz Gita
+	Repos folder	Folder repozytoriów
+	Each app's repo is cloned into its own folder in here.	Repozytorium każdej aplikacji trafia tutaj do osobnego folderu.
+@plural	{n} update|{n} updates	{n} aktualizacja|{n} aktualizacje|{n} aktualizacji
+@plural	{n} local commit|{n} local commits	{n} lokalny commit|{n} lokalne commity|{n} lokalnych commitów
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} już istnieje i nie jest repozytorium git, więc pozostał nietknięty
+@msg	{path} is a clone of another repository, so it was left alone	{path} jest klonem innego repozytorium, więc pozostał nietknięty
+@msg	Couldn't fetch {name}'s source code: {e}	Nie udało się pobrać zmian kodu źródłowego {name}: {e}
+@msg	Couldn't create {path}: {e}	Nie udało się utworzyć {path}: {e}
+@msg	{name}'s source code was cloned	Sklonowano kod źródłowy {name}
+@msg	Couldn't clone {name}'s source code: {e}	Nie udało się sklonować kodu źródłowego {name}: {e}
+@msg	{name}'s source code is up to date	Kod źródłowy {name} jest aktualny
+@msg	{name}'s clone isn't on a branch, so it was only fetched	Klon {name} nie jest na żadnej gałęzi, więc tylko pobrano zmiany
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	Klon {name} ma lokalne commity, których nie ma na GitHubie, więc tylko pobrano zmiany
+@msg	{name}'s clone has local changes, so it was only fetched	Klon {name} ma lokalne zmiany, więc tylko pobrano zmiany
+@msg	{name}'s source code updated ({n} new commits)	Zaktualizowano kod źródłowy {name} (nowe commity: {n})
+@msg	Couldn't update {name}'s source code: {e}	Nie udało się zaktualizować kodu źródłowego {name}: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git nie jest zainstalowany. Zainstaluj go z git-scm.com i spróbuj ponownie.
+	Code	Kod
+	Open repos folder	Otwórz folder repozytoriów
+	Change folder…	Zmień folder…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Klonuje kod źródłowy każdej aplikacji do {path} albo aktualizuje znajdujące się tam klony. Folder zmienisz w Ustawienia → Kod źródłowy.
+@msg	Couldn't open the folder: {e}	Nie udało się otworzyć folderu: {e}

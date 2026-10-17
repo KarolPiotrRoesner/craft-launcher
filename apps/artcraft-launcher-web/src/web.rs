@@ -329,7 +329,7 @@ impl Backend for WebBackend {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities { manage_apps: false, reveal_label: "", self_update: false }
+        Capabilities { manage_apps: false, reveal_label: "", self_update: false, clone_repos: false }
     }
 
     fn platform(&self) -> Option<Platform> {

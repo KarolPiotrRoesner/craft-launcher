@@ -330,3 +330,53 @@ figcraft	Interface design and prototyping	界面设计与原型制作
 	Replace what's there?	替换现有内容？
 	{path} already exists. Installing {name} will overwrite it.	{path} 已存在。安装 {name} 将覆盖它。
 	Replace	替换
+# Source code repos (clone, check and update with git).
+	Repos	仓库
+	Not cloned	未克隆
+	Waiting…	等待中…
+	Cloning…	正在克隆…
+	Fetching…	正在获取…
+	The folder isn't a git repository	该文件夹不是 git 仓库
+	A clone of another repository	其他仓库的克隆
+	Git isn't installed	未安装 Git
+	detached	分离
+	diverged	已分叉
+	up to date	最新
+	modified	有修改
+	Checking repos…	正在检查仓库…
+	Check repos	检查仓库
+	Fetch every cloned repo to see what's new, without changing any files	获取每个已克隆仓库的更新以查看新内容，不更改任何文件
+	Repos: {count} to go	仓库：还剩 {count} 个
+	Update repos ({count})	更新仓库（{count}）
+	Update repos	更新仓库
+	Download all repos	下载全部仓库
+	Git isn't installed. Install it from git-scm.com, then try again.	未安装 Git。请从 git-scm.com 安装后重试。
+	Update repository	更新仓库
+	Clone repository	克隆仓库
+	Open repository folder	打开仓库文件夹
+	Open folder	打开文件夹
+	Source code	源代码
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	“下载全部仓库”会克隆每个应用的 GitHub 仓库及其完整历史；有本地修改的克隆只会获取更新，绝不会被覆盖。需要 Git。
+	Get Git	获取 Git
+	Repos folder	仓库文件夹
+	Each app's repo is cloned into its own folder in here.	每个应用的仓库都会克隆到这里各自的文件夹中。
+@plural	{n} update|{n} updates	{n} 个更新
+@plural	{n} local commit|{n} local commits	{n} 个本地提交
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} 已存在且不是 git 仓库，因此未做改动
+@msg	{path} is a clone of another repository, so it was left alone	{path} 是其他仓库的克隆，因此未做改动
+@msg	Couldn't fetch {name}'s source code: {e}	无法获取 {name} 的源代码：{e}
+@msg	Couldn't create {path}: {e}	无法创建 {path}：{e}
+@msg	{name}'s source code was cloned	已克隆 {name} 的源代码
+@msg	Couldn't clone {name}'s source code: {e}	无法克隆 {name} 的源代码：{e}
+@msg	{name}'s source code is up to date	{name} 的源代码已是最新
+@msg	{name}'s clone isn't on a branch, so it was only fetched	{name} 的克隆不在任何分支上，因此只获取了更新
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	{name} 的克隆有 GitHub 上没有的本地提交，因此只获取了更新
+@msg	{name}'s clone has local changes, so it was only fetched	{name} 的克隆有本地修改，因此只获取了更新
+@msg	{name}'s source code updated ({n} new commits)	已更新 {name} 的源代码（{n} 个新提交）
+@msg	Couldn't update {name}'s source code: {e}	无法更新 {name} 的源代码：{e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	未安装 Git。请从 git-scm.com 安装后重试。
+	Code	代码
+	Open repos folder	打开仓库文件夹
+	Change folder…	更改文件夹…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	将每个应用的源代码克隆到 {path}，或将那里的克隆更新到最新。可在 设置 → 源代码 中更改文件夹。
+@msg	Couldn't open the folder: {e}	无法打开文件夹：{e}

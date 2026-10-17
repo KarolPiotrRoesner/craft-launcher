@@ -330,3 +330,53 @@ filter	Installed	Nainstalováno
 	Replace what's there?	Nahradit, co tam je?
 	{path} already exists. Installing {name} will overwrite it.	{path} už existuje. Instalace aplikace {name} ho přepíše.
 	Replace	Nahradit
+# Source code repos (clone, check and update with git).
+	Repos	Repozitáře
+	Not cloned	Neklonováno
+	Waiting…	Čeká…
+	Cloning…	Klonuje se…
+	Fetching…	Stahují se změny…
+	The folder isn't a git repository	Složka není repozitář git
+	A clone of another repository	Klon jiného repozitáře
+	Git isn't installed	Git není nainstalován
+	detached	odpojeno
+	diverged	rozcházející se
+	up to date	aktuální
+	modified	upraveno
+	Checking repos…	Kontrolují se repozitáře…
+	Check repos	Zkontrolovat repozitáře
+	Fetch every cloned repo to see what's new, without changing any files	Stáhne změny všech naklonovaných repozitářů a ukáže, co je nového, aniž by měnil soubory
+	Repos: {count} to go	Repozitáře: zbývá {count}
+	Update repos ({count})	Aktualizovat repozitáře ({count})
+	Update repos	Aktualizovat repozitáře
+	Download all repos	Stáhnout všechny repozitáře
+	Git isn't installed. Install it from git-scm.com, then try again.	Git není nainstalován. Nainstalujte ho z git-scm.com a zkuste to znovu.
+	Update repository	Aktualizovat repozitář
+	Clone repository	Naklonovat repozitář
+	Open repository folder	Otevřít složku repozitáře
+	Open folder	Otevřít složku
+	Source code	Zdrojový kód
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	„Stáhnout všechny repozitáře“ naklonuje repozitář GitHub každé aplikace s celou historií; klony s místními změnami se jen stáhnou, nikdy se nepřepíšou. Vyžaduje Git.
+	Get Git	Získat Git
+	Repos folder	Složka repozitářů
+	Each app's repo is cloned into its own folder in here.	Repozitář každé aplikace se naklonuje sem, do vlastní složky.
+@plural	{n} update|{n} updates	{n} aktualizace|{n} aktualizace|{n} aktualizací
+@plural	{n} local commit|{n} local commits	{n} místní commit|{n} místní commity|{n} místních commitů
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} už existuje a není repozitář git, proto zůstal beze změny
+@msg	{path} is a clone of another repository, so it was left alone	{path} je klon jiného repozitáře, proto zůstal beze změny
+@msg	Couldn't fetch {name}'s source code: {e}	Zdrojový kód aplikace {name} se nepodařilo stáhnout: {e}
+@msg	Couldn't create {path}: {e}	{path} se nepodařilo vytvořit: {e}
+@msg	{name}'s source code was cloned	Zdrojový kód aplikace {name} byl naklonován
+@msg	Couldn't clone {name}'s source code: {e}	Zdrojový kód aplikace {name} se nepodařilo naklonovat: {e}
+@msg	{name}'s source code is up to date	Zdrojový kód aplikace {name} je aktuální
+@msg	{name}'s clone isn't on a branch, so it was only fetched	Klon aplikace {name} není na žádné větvi, proto se změny jen stáhly
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	Klon aplikace {name} má místní commity, které nejsou na GitHubu, proto se změny jen stáhly
+@msg	{name}'s clone has local changes, so it was only fetched	Klon aplikace {name} má místní změny, proto se změny jen stáhly
+@msg	{name}'s source code updated ({n} new commits)	Zdrojový kód aplikace {name} aktualizován (nových commitů: {n})
+@msg	Couldn't update {name}'s source code: {e}	Zdrojový kód aplikace {name} se nepodařilo aktualizovat: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git není nainstalován. Nainstalujte ho z git-scm.com a zkuste to znovu.
+	Code	Kód
+	Open repos folder	Otevřít složku repozitářů
+	Change folder…	Změnit složku…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Naklonuje zdrojový kód každé aplikace do {path} nebo tam aktualizuje stávající klony. Složku změníte v Nastavení → Zdrojový kód.
+@msg	Couldn't open the folder: {e}	Složku se nepodařilo otevřít: {e}

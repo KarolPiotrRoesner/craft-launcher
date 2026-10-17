@@ -1,12 +1,12 @@
 //! What the UI knows about each app.
 
 use artcraft_launcher_core::platform::{Platform, pick_asset};
-use artcraft_launcher_core::protocol::{JobPhase, LatestRelease, PausedDownload};
+use artcraft_launcher_core::protocol::{JobPhase, LatestRelease, PausedDownload, RepoState};
 use artcraft_launcher_core::release::Release;
 use artcraft_launcher_core::status::{self, AppStatus, Latest};
 use artcraft_launcher_core::{CraftApp, Installed};
 
-use crate::i18n::t;
+use crate::i18n::{t, tn};
 
 #[derive(Clone, Debug)]
 pub struct AppEntry {
@@ -22,11 +22,15 @@ pub struct AppEntry {
     pub paused: Option<PausedDownload>,
     /// A finished download waiting for another try at installing it.
     pub ready: bool,
+    /// Where the clone of the app's source code repo stands (desktop only).
+    pub repo: Option<RepoState>,
+    /// Why the last repo job failed or left the clone alone (in English, shown through `msg`).
+    pub repo_note: Option<String>,
 }
 
 impl AppEntry {
     pub fn new(app: &'static CraftApp) -> Self {
-        Self { app, latest: None, installed: None, detected: false, job: None, origin: None, paused: None, ready: false }
+        Self { app, latest: None, installed: None, detected: false, job: None, origin: None, paused: None, ready: false, repo: None, repo_note: None }
     }
 
     pub fn release(&self) -> Option<&Release> {
@@ -62,6 +66,19 @@ impl AppEntry {
 
     pub fn latest_label(&self) -> Option<String> {
         self.release().map(Release::version_label)
+    }
+
+    /// A repo job is queued or running.
+    pub fn repo_busy(&self) -> bool {
+        self.repo.as_ref().is_some_and(RepoState::busy)
+    }
+
+    /// Commits waiting on GitHub for the clone, as of its last fetch.
+    pub fn repo_behind(&self) -> u32 {
+        match &self.repo {
+            Some(RepoState::Ready(info)) => info.behind,
+            _ => 0,
+        }
     }
 
     pub fn failure(&self) -> Option<&str> {
@@ -105,6 +122,77 @@ pub fn entry_status_text(e: &AppEntry, status: &AppStatus, manage_apps: bool) ->
         (None, Some(_)) => (t("Download paused").to_string(), Tone::Warn),
         _ => status_text(status, manage_apps),
     }
+}
+
+/// What the clone of an app's repo is doing or how it stands, in full:
+/// `v0.6.0 · up to date · main · a1b2c3d · Oct 15, 2026`.
+pub fn repo_text(state: &RepoState) -> (String, Tone) {
+    match state {
+        RepoState::NotCloned => (t("Not cloned").to_string(), Tone::Faint),
+        RepoState::Queued => (t("Waiting…").to_string(), Tone::Faint),
+        RepoState::Cloning => (t("Cloning…").to_string(), Tone::Info),
+        RepoState::Fetching => (t("Fetching…").to_string(), Tone::Info),
+        RepoState::NotARepo => (t("The folder isn't a git repository").to_string(), Tone::Warn),
+        RepoState::ForeignRemote => (t("A clone of another repository").to_string(), Tone::Warn),
+        RepoState::GitMissing => (t("Git isn't installed").to_string(), Tone::Warn),
+        RepoState::Ready(info) => {
+            // What matters first (the version and whether anything is waiting), so a narrow card
+            // cuts off the details rather than the news.
+            let mut parts = Vec::new();
+            if let Some(v) = &info.version {
+                parts.push(format!("v{v}"));
+            }
+            let tone = if info.behind > 0 && info.ahead > 0 {
+                parts.push(t("diverged").to_string());
+                Tone::Warn
+            } else if info.behind > 0 {
+                parts.push(tn(u64::from(info.behind), "{n} update", "{n} updates"));
+                Tone::Warn
+            } else if info.ahead > 0 {
+                parts.push(tn(u64::from(info.ahead), "{n} local commit", "{n} local commits"));
+                Tone::Neutral
+            } else {
+                parts.push(t("up to date").to_string());
+                Tone::Good
+            };
+            if info.modified {
+                parts.push(t("modified").to_string());
+            }
+            parts.push(info.branch.clone().unwrap_or_else(|| t("detached").to_string()));
+            if !info.head.is_empty() {
+                parts.push(info.head.clone());
+            }
+            if let Some(secs) = info.date.as_deref().and_then(|d| artcraft_launcher_core::time::parse_rfc3339(&format!("{d}T00:00:00Z"))) {
+                parts.push(crate::views::date_text(secs));
+            }
+            (parts.join(" · "), tone)
+        }
+    }
+}
+
+/// [`repo_text`] cut down for a card or a table row: the version, and only what needs attention
+/// (`v0.6.0 · 3 updates`, `v0.6.0 · modified`); the colour says the rest.
+pub fn repo_text_short(state: &RepoState) -> (String, Tone) {
+    let RepoState::Ready(info) = state else { return repo_text(state) };
+    let (_, tone) = repo_text(state);
+    let mut parts = Vec::new();
+    if let Some(v) = &info.version {
+        parts.push(format!("v{v}"));
+    }
+    if info.behind > 0 && info.ahead > 0 {
+        parts.push(t("diverged").to_string());
+    } else if info.behind > 0 {
+        parts.push(tn(u64::from(info.behind), "{n} update", "{n} updates"));
+    } else if info.ahead > 0 {
+        parts.push(tn(u64::from(info.ahead), "{n} local commit", "{n} local commits"));
+    }
+    if info.modified {
+        parts.push(t("modified").to_string());
+    }
+    if parts.is_empty() {
+        parts.push(t("up to date").to_string());
+    }
+    (parts.join(" · "), tone)
 }
 
 /// Sort rank for "by status": things needing attention first.

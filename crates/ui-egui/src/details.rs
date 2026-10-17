@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use artcraft_launcher_core::details::AppDetails;
 use artcraft_launcher_core::platform::pick_asset;
-use artcraft_launcher_core::protocol::Command;
+use artcraft_launcher_core::protocol::{Command, RepoState};
 use egui::{Color32, CornerRadius, Id, Margin, Order, Rect, RichText, Sense, Stroke, Ui, emath::easing, pos2, vec2};
 
 use crate::app::LauncherUi;
@@ -237,10 +237,41 @@ impl LauncherUi {
             let row_w = ui.available_width();
             ui.horizontal(|ui| self.actions_in(ui, entry, &status, row_w, false));
             link_buttons(ui, app, row_w);
+            if self.caps.clone_repos {
+                self.repo_row(ui, entry, row_w, t);
+            }
         });
         let r = hero.response.rect;
         ui.painter().rect_filled(Rect::from_min_size(r.min, vec2(r.width(), 2.0)), CornerRadius::ZERO, app_color);
         ui.painter().hline(r.x_range(), r.bottom() - 0.5, t.hairline());
+    }
+
+    /// The app's source code clone: Clone or Update, Open folder, and where it stands.
+    fn repo_row(&mut self, ui: &mut Ui, entry: &AppEntry, row_w: f32, t: &Tokens) {
+        let id = entry.app.id.to_string();
+        let state = entry.repo.clone().unwrap_or(RepoState::NotCloned);
+        let (text, tone) = crate::model::repo_text(&state);
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            let label = if state.cloned() { tl!("Update repository") } else { tl!("Clone repository") };
+            let button_w = (row_w / 3.0).floor();
+            if ui.add_enabled_ui(!state.busy(), |ui| widgets::button(ui, label, Kind::Secondary, button_w)).inner.clicked() {
+                self.send(Command::SyncRepo { app: id.clone() });
+            }
+            if state.cloned() && widgets::button(ui, tl!("Open folder"), Kind::Secondary, 0.0).clicked() {
+                self.send(Command::OpenRepoFolder { app: Some(id.clone()) });
+            }
+            let color = widgets::tone_color(t, tone);
+            if state.busy() {
+                let width = ui.available_width().max(80.0);
+                widgets::progress(ui, None, &text, color, width);
+            } else {
+                ui.add(egui::Label::new(RichText::new(text).size(12.5).color(color)).truncate());
+            }
+        });
+        if let Some(note) = &entry.repo_note {
+            ui.add(egui::Label::new(RichText::new(crate::i18n::msg(note)).size(12.5).color(t.warn)).wrap());
+        }
     }
 
     /// The facts of the latest release in cells, then its notes.

@@ -365,3 +365,53 @@ filter	Installed	インストール済み
 	Replace what's there?	既存の項目を置き換えますか？
 	{path} already exists. Installing {name} will overwrite it.	{path} は既に存在します。{name} をインストールすると上書きされます。
 	Replace	置き換える
+# Source code repos (clone, check and update with git).
+	Repos	リポジトリ
+	Not cloned	未クローン
+	Waiting…	待機中…
+	Cloning…	クローン中…
+	Fetching…	フェッチ中…
+	The folder isn't a git repository	このフォルダーは git リポジトリではありません
+	A clone of another repository	別のリポジトリのクローン
+	Git isn't installed	Git がインストールされていません
+	detached	デタッチ
+	diverged	分岐
+	up to date	最新
+	modified	変更あり
+	Checking repos…	リポジトリを確認中…
+	Check repos	リポジトリを確認
+	Fetch every cloned repo to see what's new, without changing any files	クローン済みの各リポジトリをフェッチして新しい変更を確認します。ファイルは変更しません
+	Repos: {count} to go	リポジトリ: 残り {count}
+	Update repos ({count})	リポジトリを更新（{count}）
+	Update repos	リポジトリを更新
+	Download all repos	すべてのリポジトリをダウンロード
+	Git isn't installed. Install it from git-scm.com, then try again.	Git がインストールされていません。git-scm.com からインストールして、もう一度お試しください。
+	Update repository	リポジトリを更新
+	Clone repository	リポジトリをクローン
+	Open repository folder	リポジトリのフォルダーを開く
+	Open folder	フォルダーを開く
+	Source code	ソースコード
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	「すべてのリポジトリをダウンロード」は各アプリの GitHub リポジトリを全履歴ごとクローンします。ローカルに変更があるクローンはフェッチのみ行い、上書きはしません。Git が必要です。
+	Get Git	Git を入手
+	Repos folder	リポジトリのフォルダー
+	Each app's repo is cloned into its own folder in here.	各アプリのリポジトリは、この中のそれぞれのフォルダーにクローンされます。
+@plural	{n} update|{n} updates	{n} 件の更新
+@plural	{n} local commit|{n} local commits	{n} 件のローカルコミット
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} は既に存在し、git リポジトリではないため、そのままにしました
+@msg	{path} is a clone of another repository, so it was left alone	{path} は別のリポジトリのクローンのため、そのままにしました
+@msg	Couldn't fetch {name}'s source code: {e}	{name} のソースコードをフェッチできませんでした: {e}
+@msg	Couldn't create {path}: {e}	{path} を作成できませんでした: {e}
+@msg	{name}'s source code was cloned	{name} のソースコードをクローンしました
+@msg	Couldn't clone {name}'s source code: {e}	{name} のソースコードをクローンできませんでした: {e}
+@msg	{name}'s source code is up to date	{name} のソースコードは最新です
+@msg	{name}'s clone isn't on a branch, so it was only fetched	{name} のクローンはブランチ上にないため、フェッチのみ行いました
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	{name} のクローンに GitHub にないローカルコミットがあるため、フェッチのみ行いました
+@msg	{name}'s clone has local changes, so it was only fetched	{name} のクローンにローカルの変更があるため、フェッチのみ行いました
+@msg	{name}'s source code updated ({n} new commits)	{name} のソースコードを更新しました（新しいコミット {n} 件）
+@msg	Couldn't update {name}'s source code: {e}	{name} のソースコードを更新できませんでした: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git がインストールされていません。git-scm.com からインストールして、もう一度お試しください。
+	Code	コード
+	Open repos folder	リポジトリのフォルダーを開く
+	Change folder…	フォルダーを変更…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	各アプリのソースコードを {path} にクローンするか、そこにあるクローンを最新にします。フォルダーは 設定 → ソースコード で変更できます。
+@msg	Couldn't open the folder: {e}	フォルダーを開けませんでした: {e}

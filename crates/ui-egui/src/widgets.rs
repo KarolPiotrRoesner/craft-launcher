@@ -452,6 +452,10 @@ pub fn human_bytes(n: u64) -> String {
 pub enum Glyph {
     Pause,
     Close,
+    /// A folder: open it in the file manager.
+    Folder,
+    /// A circling arrow: fetch and update.
+    Sync,
 }
 
 /// A small outlined square button with a drawn glyph; inverts on hover.
@@ -477,6 +481,22 @@ pub fn glyph_button(ui: &mut Ui, glyph: Glyph, tip: &str) -> Response {
             let s = 4.5;
             p.line_segment([m + vec2(-s, -s), m + vec2(s, s)], Stroke::new(1.5, c));
             p.line_segment([m + vec2(-s, s), m + vec2(s, -s)], Stroke::new(1.5, c));
+        }
+        Glyph::Folder => {
+            let body = Rect::from_center_size(m + vec2(0.0, 1.0), vec2(14.0, 9.5));
+            p.rect_stroke(body, CornerRadius::ZERO, Stroke::new(1.3, c), egui::StrokeKind::Middle);
+            let (l, top) = (body.left(), body.top());
+            let tab = vec![egui::pos2(l, top), egui::pos2(l, top - 2.5), egui::pos2(l + 5.0, top - 2.5), egui::pos2(l + 6.5, top)];
+            p.add(egui::Shape::line(tab, Stroke::new(1.3, c)));
+        }
+        Glyph::Sync => {
+            // Three quarters of a circle, with the arrowhead at its open end.
+            let r = 5.0;
+            let (from, to) = (-0.25 * std::f32::consts::PI, 1.25 * std::f32::consts::PI);
+            let arc: Vec<egui::Pos2> = (0..=16).map(|i| from + (to - from) * i as f32 / 16.0).map(|a| m + vec2(a.cos() * r, -a.sin() * r)).collect();
+            p.add(egui::Shape::line(arc, Stroke::new(1.4, c)));
+            let tip = m + vec2(from.cos() * r, -from.sin() * r);
+            p.add(egui::Shape::convex_polygon(vec![tip + vec2(-3.5, -0.5), tip + vec2(1.5, -3.5), tip + vec2(1.0, 1.5)], c, Stroke::NONE));
         }
     }
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tip));

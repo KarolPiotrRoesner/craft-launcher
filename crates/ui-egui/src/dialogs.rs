@@ -10,6 +10,22 @@ use crate::settings::{CheckEvery, Settings};
 use crate::theme::{self, ThemeChoice, Tokens};
 use crate::widgets::{self, Cell, Kind};
 
+/// Where Git for Windows (and the other systems' Git) comes from.
+const GIT_URL: &str = "https://git-scm.com/downloads";
+
+/// What a folder field is for: its label, the line under it and its egui id.
+#[derive(Clone, Copy)]
+struct FolderField {
+    label: &'static str,
+    help: &'static str,
+    id: &'static str,
+}
+
+impl FolderField {
+    const INSTALL: Self = Self { label: "Install folder", help: "Apps are placed inside this folder.", id: "install_folder" };
+    const REPOS: Self = Self { label: "Repos folder", help: "Each app's repo is cloned into its own folder in here.", id: "repos_folder" };
+}
+
 impl LauncherUi {
     pub(crate) fn dialogs(&mut self, ctx: &egui::Context, host: &mut dyn Host) {
         let Some(mut dialog) = self.dialog.clone() else {
@@ -214,7 +230,7 @@ impl LauncherUi {
         ui.set_width(440.0f32.min(ui.ctx().content_rect().width() - 80.0));
         Self::title(ui, None, app.name, tl!("Install folder"));
         let default = self.settings.install_locations.root.as_deref().unwrap_or(tl!("System default"));
-        Self::folder_field(ui, folder, Some(default), host);
+        Self::folder_field(ui, folder, Some(default), FolderField::INSTALL, host);
         if self.platform.is_some_and(|p| p.os == Os::Linux) {
             ui.label(tl!("Custom folders use AppImage on Linux."));
         }
@@ -236,16 +252,11 @@ impl LauncherUi {
         close
     }
 
-    fn folder_field(ui: &mut egui::Ui, folder: &mut String, default: Option<&str>, host: &mut dyn Host) {
-        let label = ui.label(tl!("Install folder"));
-        ui.add(
-            egui::TextEdit::singleline(folder)
-                .id_salt("install_folder")
-                .hint_text(default.unwrap_or(tl!("System default")))
-                .desired_width(f32::INFINITY),
-        )
-        .labelled_by(label.id);
-        ui.label(tl!("Apps are placed inside this folder."));
+    fn folder_field(ui: &mut egui::Ui, folder: &mut String, default: Option<&str>, field: FolderField, host: &mut dyn Host) {
+        let label = ui.label(crate::i18n::t(field.label));
+        ui.add(egui::TextEdit::singleline(folder).id_salt(field.id).hint_text(default.unwrap_or(tl!("System default"))).desired_width(f32::INFINITY))
+            .labelled_by(label.id);
+        ui.label(crate::i18n::t(field.help));
         ui.horizontal(|ui| {
             if widgets::button(ui, tl!("Browse…"), Kind::Secondary, 100.0).clicked()
                 && let Some(selected) = host.pick_folder(if folder.is_empty() { default } else { Some(folder.as_str()) })
@@ -367,7 +378,7 @@ impl LauncherUi {
             section(ui, tl!("Default install folder"));
             if self.custom_install_folders() {
                 let mut folder = self.settings.install_locations.root.clone().unwrap_or_default();
-                Self::folder_field(ui, &mut folder, None, host);
+                Self::folder_field(ui, &mut folder, None, FolderField::INSTALL, host);
                 self.settings.install_locations.root = (!folder.is_empty()).then_some(folder);
                 ui.label(RichText::new(tl!("New installs use this folder. Updates stay in their current location.")).size(12.0).color(t.muted));
                 if self.platform.is_some_and(|p| p.os == Os::Linux) {
@@ -375,6 +386,32 @@ impl LauncherUi {
                 }
             } else {
                 ui.label(tl!("The system manages install locations here."));
+            }
+        }
+
+        if self.caps.clone_repos {
+            section(ui, tl!("Source code"));
+            let mut folder = self.settings.repos_folder.clone().unwrap_or_default();
+            let default = if self.settings.repos_folder.is_none() { self.repos_folder.clone() } else { None };
+            Self::folder_field(ui, &mut folder, default.as_deref(), FolderField::REPOS, host);
+            self.settings.repos_folder = (!folder.trim().is_empty()).then_some(folder);
+            if widgets::button(ui, tl!("Open folder"), Kind::Secondary, 120.0).clicked() {
+                // The backend uses the folder from the next Configure, which goes out first.
+                self.configure();
+                self.send(Command::OpenRepoFolder { app: None });
+            }
+            ui.label(
+                RichText::new(tl!("Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git."))
+                    .size(12.0)
+                    .color(t.muted),
+            );
+            if self.entries.iter().any(|e| e.repo == Some(artcraft_launcher_core::protocol::RepoState::GitMissing)) {
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(RichText::new(tl!("Git isn't installed")).size(12.0).color(t.warn));
+                    if widgets::button(ui, tl!("Get Git"), Kind::Secondary, 0.0).on_hover_text(GIT_URL).clicked() {
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(GIT_URL));
+                    }
+                });
             }
         }
 

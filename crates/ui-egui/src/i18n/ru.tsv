@@ -358,3 +358,53 @@ filter	Installed	Установлены
 	Replace what's there?	Заменить существующее?
 	{path} already exists. Installing {name} will overwrite it.	{path} уже существует. Установка {name} перезапишет его.
 	Replace	Заменить
+# Source code repos (clone, check and update with git).
+	Repos	Репозитории
+	Not cloned	Не клонирован
+	Waiting…	Ожидание…
+	Cloning…	Клонирование…
+	Fetching…	Получение изменений…
+	The folder isn't a git repository	Папка не является git-репозиторием
+	A clone of another repository	Клон другого репозитория
+	Git isn't installed	Git не установлен
+	detached	отсоединён
+	diverged	расходится
+	up to date	актуален
+	modified	изменён
+	Checking repos…	Проверка репозиториев…
+	Check repos	Проверить репозитории
+	Fetch every cloned repo to see what's new, without changing any files	Получает изменения каждого клонированного репозитория, чтобы показать новое, не меняя файлы
+	Repos: {count} to go	Репозитории: осталось {count}
+	Update repos ({count})	Обновить репозитории ({count})
+	Update repos	Обновить репозитории
+	Download all repos	Скачать все репозитории
+	Git isn't installed. Install it from git-scm.com, then try again.	Git не установлен. Установите его с git-scm.com и попробуйте снова.
+	Update repository	Обновить репозиторий
+	Clone repository	Клонировать репозиторий
+	Open repository folder	Открыть папку репозитория
+	Open folder	Открыть папку
+	Source code	Исходный код
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	«Скачать все репозитории» клонирует GitHub-репозиторий каждого приложения со всей историей; клоны с локальными изменениями только получают изменения и никогда не перезаписываются. Нужен Git.
+	Get Git	Скачать Git
+	Repos folder	Папка репозиториев
+	Each app's repo is cloned into its own folder in here.	Репозиторий каждого приложения клонируется сюда, в отдельную папку.
+@plural	{n} update|{n} updates	{n} обновление|{n} обновления|{n} обновлений
+@plural	{n} local commit|{n} local commits	{n} локальный коммит|{n} локальных коммита|{n} локальных коммитов
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} уже существует и не является git-репозиторием, поэтому оставлен без изменений
+@msg	{path} is a clone of another repository, so it was left alone	{path} — клон другого репозитория, поэтому оставлен без изменений
+@msg	Couldn't fetch {name}'s source code: {e}	Не удалось получить исходный код {name}: {e}
+@msg	Couldn't create {path}: {e}	Не удалось создать {path}: {e}
+@msg	{name}'s source code was cloned	Исходный код {name} клонирован
+@msg	Couldn't clone {name}'s source code: {e}	Не удалось клонировать исходный код {name}: {e}
+@msg	{name}'s source code is up to date	Исходный код {name} актуален
+@msg	{name}'s clone isn't on a branch, so it was only fetched	Клон {name} не находится ни на одной ветке, поэтому изменения только получены
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	В клоне {name} есть локальные коммиты, которых нет на GitHub, поэтому изменения только получены
+@msg	{name}'s clone has local changes, so it was only fetched	В клоне {name} есть локальные изменения, поэтому изменения только получены
+@msg	{name}'s source code updated ({n} new commits)	Исходный код {name} обновлён (новых коммитов: {n})
+@msg	Couldn't update {name}'s source code: {e}	Не удалось обновить исходный код {name}: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	Git не установлен. Установите его с git-scm.com и попробуйте снова.
+	Code	Код
+	Open repos folder	Открыть папку репозиториев
+	Change folder…	Изменить папку…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Клонирует исходный код каждого приложения в {path} или обновляет уже имеющиеся там клоны. Папку можно изменить в разделе Настройки → Исходный код.
+@msg	Couldn't open the folder: {e}	Не удалось открыть папку: {e}

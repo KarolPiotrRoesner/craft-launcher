@@ -363,3 +363,53 @@ filter	Installed	Telepítve
 	Replace what's there?	Lecseréli, ami ott van?
 	{path} already exists. Installing {name} will overwrite it.	{path} már létezik. A(z) {name} telepítése felülírja.
 	Replace	Csere
+# Source code repos (clone, check and update with git).
+	Repos	Tárolók
+	Not cloned	Nincs klónozva
+	Waiting…	Várakozik…
+	Cloning…	Klónozás…
+	Fetching…	Lekérés…
+	The folder isn't a git repository	A mappa nem git-tároló
+	A clone of another repository	Egy másik tároló klónja
+	Git isn't installed	A Git nincs telepítve
+	detached	leválasztva
+	diverged	elágazott
+	up to date	naprakész
+	modified	módosítva
+	Checking repos…	Tárolók ellenőrzése…
+	Check repos	Tárolók ellenőrzése
+	Fetch every cloned repo to see what's new, without changing any files	Lekéri az összes klónozott tárolót, hogy lásd az újdonságokat, fájlok módosítása nélkül
+	Repos: {count} to go	Tárolók: még {count}
+	Update repos ({count})	Tárolók frissítése ({count})
+	Update repos	Tárolók frissítése
+	Download all repos	Összes tároló letöltése
+	Git isn't installed. Install it from git-scm.com, then try again.	A Git nincs telepítve. Telepítsd a git-scm.com oldalról, majd próbáld újra.
+	Update repository	Tároló frissítése
+	Clone repository	Tároló klónozása
+	Open repository folder	Tároló mappájának megnyitása
+	Open folder	Mappa megnyitása
+	Source code	Forráskód
+	Download all repos clones each app's GitHub repo with its full history; clones with local changes are only fetched, never overwritten. Needs Git.	Az „Összes tároló letöltése” minden alkalmazás GitHub-tárolóját a teljes előzménnyel klónozza; a helyi módosításokat tartalmazó klónokat csak lekéri, sosem írja felül. Git szükséges hozzá.
+	Get Git	Git letöltése
+	Repos folder	Tárolók mappája
+	Each app's repo is cloned into its own folder in here.	Minden alkalmazás tárolója ide kerül, saját mappába.
+@plural	{n} update|{n} updates	{n} frissítés|{n} frissítés
+@plural	{n} local commit|{n} local commits	{n} helyi commit|{n} helyi commit
+@msg	{path} already exists and isn't a git repository, so it was left alone	{path} már létezik, és nem git-tároló, ezért érintetlen maradt
+@msg	{path} is a clone of another repository, so it was left alone	{path} egy másik tároló klónja, ezért érintetlen maradt
+@msg	Couldn't fetch {name}'s source code: {e}	{name} forráskódját nem sikerült lekérni: {e}
+@msg	Couldn't create {path}: {e}	{path} nem hozható létre: {e}
+@msg	{name}'s source code was cloned	{name} forráskódja klónozva
+@msg	Couldn't clone {name}'s source code: {e}	{name} forráskódját nem sikerült klónozni: {e}
+@msg	{name}'s source code is up to date	{name} forráskódja naprakész
+@msg	{name}'s clone isn't on a branch, so it was only fetched	{name} klónja nincs ágon, ezért csak lekérés történt
+@msg	{name}'s clone has local commits that aren't on GitHub, so it was only fetched	{name} klónjában a GitHubon nem szereplő helyi commitok vannak, ezért csak lekérés történt
+@msg	{name}'s clone has local changes, so it was only fetched	{name} klónjában helyi módosítások vannak, ezért csak lekérés történt
+@msg	{name}'s source code updated ({n} new commits)	{name} forráskódja frissítve ({n} új commit)
+@msg	Couldn't update {name}'s source code: {e}	{name} forráskódját nem sikerült frissíteni: {e}
+@msg	Git isn't installed. Install it from git-scm.com, then try again.	A Git nincs telepítve. Telepítsd a git-scm.com oldalról, majd próbáld újra.
+	Code	Kód
+	Open repos folder	Tárolók mappájának megnyitása
+	Change folder…	Mappa módosítása…
+	Clone each app's source code into {path}, or bring the clones there up to date. Change the folder in Settings → Source code.	Klónozza minden alkalmazás forráskódját ide: {path}, vagy frissíti az ott lévő klónokat. A mappát a Beállítások → Forráskód alatt módosíthatod.
+@msg	Couldn't open the folder: {e}	A mappa nem nyitható meg: {e}

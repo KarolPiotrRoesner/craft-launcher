@@ -85,6 +85,8 @@ impl CheckEvery {
 #[serde(default)]
 pub struct Settings {
     pub install_locations: artcraft_launcher_core::protocol::InstallLocations,
+    /// The folder the apps' source code repos are cloned into (`None`: `Documents/Craft Repos`).
+    pub repos_folder: Option<String>,
     pub view: ViewMode,
     pub filter: Filter,
     pub sort: SortKey,
@@ -171,6 +173,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             install_locations: Default::default(),
+            repos_folder: None,
             view: ViewMode::Grid,
             filter: Filter::All,
             sort: SortKey::Suite,
